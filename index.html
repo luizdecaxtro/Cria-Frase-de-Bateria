@@ -44,6 +44,42 @@
             font-size: 0.9em;
         }
 
+        .timbre-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .timbre-selector label {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 0.95em;
+        }
+
+        .timbre-selector select {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .timbre-selector select:hover {
+            border-color: #764ba2;
+        }
+
+        .timbre-selector select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
         .buttons {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -175,6 +211,11 @@
             .buttons {
                 grid-template-columns: 1fr;
             }
+
+            .timbre-selector {
+                flex-direction: column;
+                align-items: stretch;
+            }
         }
     </style>
 </head>
@@ -182,6 +223,17 @@
     <div class="container">
         <h1>🥁 Gerador de Viradas</h1>
         <p class="subtitle">Frases e viradas reais de bateria para suas músicas</p>
+
+        <div class="timbre-selector">
+            <label for="timbreSelect">Timbre da Bateria:</label>
+            <select id="timbreSelect" onchange="updateTimbre(this.value)">
+                <option value="acoustic">Acústica</option>
+                <option value="electronic">Eletrônica</option>
+                <option value="vintage">Vintage</option>
+                <option value="metal">Metal</option>
+                <option value="jazz">Jazz</option>
+            </select>
+        </div>
 
         <div class="buttons">
             <button onclick="generateFill('intro')">Intro/Início</button>
@@ -222,6 +274,51 @@
         let currentSequence = [];
         let isPlaying = false;
         let tempo = 120;
+        let currentTimbre = 'acoustic';
+
+        // Configurações de timbre
+        const timbreSettings = {
+            acoustic: {
+                kick: { freq: 150, decay: 0.5, gain: 1 },
+                snare: { freq: 200, decay: 0.2, gain: 0.7, noiseGain: 0.5 },
+                hihat: { decay: 0.05, gain: 0.3, filterFreq: 7000 },
+                tom: { decay: 0.3, gain: 0.8 },
+                crash: { decay: 2, gain: 0.6, filterFreq: 4000 },
+                ride: { freq1: 800, freq2: 540, decay: 0.5, gain: 0.3 }
+            },
+            electronic: {
+                kick: { freq: 80, decay: 0.3, gain: 1.2 },
+                snare: { freq: 180, decay: 0.15, gain: 0.9, noiseGain: 0.7 },
+                hihat: { decay: 0.03, gain: 0.5, filterFreq: 10000 },
+                tom: { decay: 0.2, gain: 1 },
+                crash: { decay: 1.5, gain: 0.8, filterFreq: 6000 },
+                ride: { freq1: 1000, freq2: 650, decay: 0.3, gain: 0.4 }
+            },
+            vintage: {
+                kick: { freq: 120, decay: 0.6, gain: 0.8 },
+                snare: { freq: 220, decay: 0.25, gain: 0.6, noiseGain: 0.4 },
+                hihat: { decay: 0.08, gain: 0.25, filterFreq: 6000 },
+                tom: { decay: 0.4, gain: 0.7 },
+                crash: { decay: 2.5, gain: 0.5, filterFreq: 3500 },
+                ride: { freq1: 700, freq2: 480, decay: 0.6, gain: 0.25 }
+            },
+            metal: {
+                kick: { freq: 60, decay: 0.2, gain: 1.5 },
+                snare: { freq: 250, decay: 0.12, gain: 1.1, noiseGain: 0.8 },
+                hihat: { decay: 0.02, gain: 0.6, filterFreq: 12000 },
+                tom: { decay: 0.25, gain: 1.2 },
+                crash: { decay: 3, gain: 0.9, filterFreq: 5000 },
+                ride: { freq1: 900, freq2: 600, decay: 0.4, gain: 0.5 }
+            },
+            jazz: {
+                kick: { freq: 100, decay: 0.4, gain: 0.7 },
+                snare: { freq: 190, decay: 0.3, gain: 0.5, noiseGain: 0.3 },
+                hihat: { decay: 0.1, gain: 0.2, filterFreq: 8000 },
+                tom: { decay: 0.35, gain: 0.65 },
+                crash: { decay: 2.2, gain: 0.45, filterFreq: 4500 },
+                ride: { freq1: 750, freq2: 500, decay: 0.7, gain: 0.28 }
+            }
+        };
 
         // Inicializar contexto de áudio
         function initAudio() {
@@ -232,43 +329,45 @@
 
         // Criar sons sintéticos para cada peça da bateria
         function playKick(time) {
+            const settings = timbreSettings[currentTimbre].kick;
             const osc = audioContext.createOscillator();
             const gain = audioContext.createGain();
             
-            osc.frequency.setValueAtTime(150, time);
-            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
+            osc.frequency.setValueAtTime(settings.freq, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + settings.decay);
             
-            gain.gain.setValueAtTime(1, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+            gain.gain.setValueAtTime(settings.gain, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + settings.decay);
             
             osc.connect(gain);
             gain.connect(audioContext.destination);
             
             osc.start(time);
-            osc.stop(time + 0.5);
+            osc.stop(time + settings.decay);
         }
 
         function playSnare(time) {
+            const settings = timbreSettings[currentTimbre].snare;
             const osc = audioContext.createOscillator();
             const noise = audioContext.createBufferSource();
             const gain = audioContext.createGain();
             const noiseGain = audioContext.createGain();
             
             // Tom da caixa
-            osc.frequency.value = 200;
-            gain.gain.setValueAtTime(0.7, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+            osc.frequency.value = settings.freq;
+            gain.gain.setValueAtTime(settings.gain, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + settings.decay);
             
             // Ruído para esteira
-            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
+            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * settings.decay, audioContext.sampleRate);
             const data = buffer.getChannelData(0);
             for (let i = 0; i < buffer.length; i++) {
                 data[i] = Math.random() * 2 - 1;
             }
             noise.buffer = buffer;
             
-            noiseGain.gain.setValueAtTime(0.5, time);
-            noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+            noiseGain.gain.setValueAtTime(settings.noiseGain, time);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, time + settings.decay);
             
             osc.connect(gain);
             gain.connect(audioContext.destination);
@@ -276,17 +375,18 @@
             noiseGain.connect(audioContext.destination);
             
             osc.start(time);
-            osc.stop(time + 0.2);
+            osc.stop(time + settings.decay);
             noise.start(time);
-            noise.stop(time + 0.2);
+            noise.stop(time + settings.decay);
         }
 
         function playHiHat(time) {
+            const settings = timbreSettings[currentTimbre].hihat;
             const noise = audioContext.createBufferSource();
             const filter = audioContext.createBiquadFilter();
             const gain = audioContext.createGain();
             
-            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.05, audioContext.sampleRate);
+            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * settings.decay, audioContext.sampleRate);
             const data = buffer.getChannelData(0);
             for (let i = 0; i < buffer.length; i++) {
                 data[i] = Math.random() * 2 - 1;
@@ -294,42 +394,44 @@
             noise.buffer = buffer;
             
             filter.type = 'highpass';
-            filter.frequency.value = 7000;
+            filter.frequency.value = settings.filterFreq;
             
-            gain.gain.setValueAtTime(0.3, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+            gain.gain.setValueAtTime(settings.gain, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + settings.decay);
             
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(audioContext.destination);
             
             noise.start(time);
-            noise.stop(time + 0.05);
+            noise.stop(time + settings.decay);
         }
 
         function playTom(time, pitch = 100) {
+            const settings = timbreSettings[currentTimbre].tom;
             const osc = audioContext.createOscillator();
             const gain = audioContext.createGain();
             
             osc.frequency.setValueAtTime(pitch, time);
-            osc.frequency.exponentialRampToValueAtTime(pitch * 0.5, time + 0.3);
+            osc.frequency.exponentialRampToValueAtTime(pitch * 0.5, time + settings.decay);
             
-            gain.gain.setValueAtTime(0.8, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+            gain.gain.setValueAtTime(settings.gain, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + settings.decay);
             
             osc.connect(gain);
             gain.connect(audioContext.destination);
             
             osc.start(time);
-            osc.stop(time + 0.3);
+            osc.stop(time + settings.decay);
         }
 
         function playCrash(time) {
+            const settings = timbreSettings[currentTimbre].crash;
             const noise = audioContext.createBufferSource();
             const filter = audioContext.createBiquadFilter();
             const gain = audioContext.createGain();
             
-            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 2, audioContext.sampleRate);
+            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * settings.decay, audioContext.sampleRate);
             const data = buffer.getChannelData(0);
             for (let i = 0; i < buffer.length; i++) {
                 data[i] = Math.random() * 2 - 1;
@@ -337,29 +439,30 @@
             noise.buffer = buffer;
             
             filter.type = 'highpass';
-            filter.frequency.value = 4000;
+            filter.frequency.value = settings.filterFreq;
             
-            gain.gain.setValueAtTime(0.6, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 2);
+            gain.gain.setValueAtTime(settings.gain, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + settings.decay);
             
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(audioContext.destination);
             
             noise.start(time);
-            noise.stop(time + 2);
+            noise.stop(time + settings.decay);
         }
 
         function playRide(time) {
+            const settings = timbreSettings[currentTimbre].ride;
             const osc1 = audioContext.createOscillator();
             const osc2 = audioContext.createOscillator();
             const gain = audioContext.createGain();
             
-            osc1.frequency.value = 800;
-            osc2.frequency.value = 540;
+            osc1.frequency.value = settings.freq1;
+            osc2.frequency.value = settings.freq2;
             
-            gain.gain.setValueAtTime(0.3, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+            gain.gain.setValueAtTime(settings.gain, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + settings.decay);
             
             osc1.connect(gain);
             osc2.connect(gain);
@@ -367,8 +470,8 @@
             
             osc1.start(time);
             osc2.start(time);
-            osc1.stop(time + 0.5);
-            osc2.stop(time + 0.5);
+            osc1.stop(time + settings.decay);
+            osc2.stop(time + settings.decay);
         }
 
         const drumFills = {
@@ -534,6 +637,10 @@
         function updateTempo(value) {
             tempo = parseInt(value);
             document.getElementById('tempoValue').textContent = tempo;
+        }
+
+        function updateTimbre(value) {
+            currentTimbre = value;
         }
     </script>
 </body>
