@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Viradas de Bateria</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .play-button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            width: 100%;
+            margin-top: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .result {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 25px;
+            border-radius: 10px;
+            min-height: 150px;
+            margin-bottom: 20px;
+        }
+
+        .result-type {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .drum-notation {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            color: #333;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: center;
+        }
+
+        .tempo-control {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tempo-control input {
+            flex: 1;
+        }
+
+        .tempo-label {
+            font-size: 0.9em;
+            color: #666;
+            min-width: 80px;
+        }
+
+        .legend {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.85em;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .legend h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .legend-item {
+            margin: 5px 0;
+        }
+
+        .legend-item strong {
+            color: #333;
+            font-family: 'Courier New', monospace;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🥁 Gerador de Viradas</h1>
+        <p class="subtitle">Frases e viradas reais de bateria para suas músicas</p>
+
+        <div class="buttons">
+            <button onclick="generateFill('intro')">Intro/Início</button>
+            <button onclick="generateFill('chorus')">Antes do Refrão</button>
+            <button onclick="generateFill('ending')">Final/Ending</button>
+        </div>
+
+        <div class="result" id="result">
+            <div class="result-type" id="fillType">Clique em um botão para gerar uma virada</div>
+            <div class="drum-notation" id="notation"></div>
+            
+            <button class="play-button" id="playButton" onclick="playDrumFill()" disabled>
+                <span id="playIcon">▶️</span> Tocar Virada
+            </button>
+
+            <div class="controls">
+                <div class="tempo-control">
+                    <span class="tempo-label">Tempo: <strong id="tempoValue">120</strong> BPM</span>
+                    <input type="range" id="tempoSlider" min="60" max="200" value="120" onchange="updateTempo(this.value)">
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>Legenda da Notação:</h3>
+            <div class="legend-item"><strong>K</strong> = Bumbo (Kick)</div>
+            <div class="legend-item"><strong>S</strong> = Caixa (Snare)</div>
+            <div class="legend-item"><strong>HH</strong> = Chimbal (Hi-Hat)</div>
+            <div class="legend-item"><strong>T1/T2</strong> = Tons (Toms)</div>
+            <div class="legend-item"><strong>FT</strong> = Surdo (Floor Tom)</div>
+            <div class="legend-item"><strong>C</strong> = Prato (Crash)</div>
+            <div class="legend-item"><strong>R</strong> = Condução (Ride)</div>
+        </div>
+    </div>
+
+    <script>
+        let audioContext;
+        let currentSequence = [];
+        let isPlaying = false;
+        let tempo = 120;
+
+        // Inicializar contexto de áudio
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Criar sons sintéticos para cada peça da bateria
+        function playKick(time) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.frequency.setValueAtTime(150, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
+            
+            gain.gain.setValueAtTime(1, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.start(time);
+            osc.stop(time + 0.5);
+        }
+
+        function playSnare(time) {
+            const osc = audioContext.createOscillator();
+            const noise = audioContext.createBufferSource();
+            const gain = audioContext.createGain();
+            const noiseGain = audioContext.createGain();
+            
+            // Tom da caixa
+            osc.frequency.value = 200;
+            gain.gain.setValueAtTime(0.7, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+            
+            // Ruído para esteira
+            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < buffer.length; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            noise.buffer = buffer;
+            
+            noiseGain.gain.setValueAtTime(0.5, time);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            noise.connect(noiseGain);
+            noiseGain.connect(audioContext.destination);
+            
+            osc.start(time);
+            osc.stop(time + 0.2);
+            noise.start(time);
+            noise.stop(time + 0.2);
+        }
+
+        function playHiHat(time) {
+            const noise = audioContext.createBufferSource();
+            const filter = audioContext.createBiquadFilter();
+            const gain = audioContext.createGain();
+            
+            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.05, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < buffer.length; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            noise.buffer = buffer;
+            
+            filter.type = 'highpass';
+            filter.frequency.value = 7000;
+            
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            noise.start(time);
+            noise.stop(time + 0.05);
+        }
+
+        function playTom(time, pitch = 100) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.frequency.setValueAtTime(pitch, time);
+            osc.frequency.exponentialRampToValueAtTime(pitch * 0.5, time + 0.3);
+            
+            gain.gain.setValueAtTime(0.8, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+            
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.start(time);
+            osc.stop(time + 0.3);
+        }
+
+        function playCrash(time) {
+            const noise = audioContext.createBufferSource();
+            const filter = audioContext.createBiquadFilter();
+            const gain = audioContext.createGain();
+            
+            const buffer = audioContext.createBuffer(1, audioContext.sampleRate * 2, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < buffer.length; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            noise.buffer = buffer;
+            
+            filter.type = 'highpass';
+            filter.frequency.value = 4000;
+            
+            gain.gain.setValueAtTime(0.6, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 2);
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            noise.start(time);
+            noise.stop(time + 2);
+        }
+
+        function playRide(time) {
+            const osc1 = audioContext.createOscillator();
+            const osc2 = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc1.frequency.value = 800;
+            osc2.frequency.value = 540;
+            
+            gain.gain.setValueAtTime(0.3, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+            
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc1.start(time);
+            osc2.start(time);
+            osc1.stop(time + 0.5);
+            osc2.stop(time + 0.5);
+        }
+
+        const drumFills = {
+            intro: [
+                {
+                    name: "Intro Rock Clássica",
+                    notation: "HH - - - | HH - - - | S - S - | K S K C\n(Chimbal aberto com acento na caixa e crash no final)",
+                    sequence: ['HH', null, null, null, 'HH', null, null, null, 'S', null, 'S', null, 'K', 'S', 'K', 'C']
+                },
+                {
+                    name: "Intro Funk Groovy",
+                    notation: "HH K HH K | S - K - | HH K S K | S S K C\n(Ghost notes na caixa com chimbal marcado)",
+                    sequence: ['HH+K', 'HH', 'K', 'HH', 'S', null, 'K', null, 'HH+K', 'HH', 'S', 'K', 'S', 'S', 'K', 'C']
+                },
+                {
+                    name: "Intro Pop Moderna",
+                    notation: "- - - - | K - - - | S - - K | S - S C\n(Entrada progressiva com crash no 4º tempo)",
+                    sequence: [null, null, null, null, 'K', null, null, null, 'S', null, null, 'K', 'S', null, 'S', 'C']
+                },
+                {
+                    name: "Intro Metal Agressiva",
+                    notation: "K K S K | K K S S | K S K S | C - C C\n(Bumbo duplo com crashes acentuados)",
+                    sequence: ['K', 'K', 'S', 'K', 'K', 'K', 'S', 'S', 'K', 'S', 'K', 'S', 'C', null, 'C', 'C']
+                },
+                {
+                    name: "Intro Jazz Swing",
+                    notation: "R - R - | S - - K | T1 T2 FT FT | K S K C\n(Ride com swing e descida nos tons)",
+                    sequence: ['R', null, 'R', null, 'S', null, null, 'K', 'T1', 'T2', 'FT', 'FT', 'K', 'S', 'K', 'C']
+                },
+                {
+                    name: "Intro Blues Shuffle",
+                    notation: "HH - HH - | K - S - | HH - HH K | S - K C\n(Shuffle no chimbal com swing característico)",
+                    sequence: ['HH', null, 'HH', null, 'K', null, 'S', null, 'HH', null, 'HH+K', null, 'S', null, 'K', 'C']
+                }
+            ],
+            chorus: [
+                {
+                    name: "Virada Clássica de Refrão",
+                    notation: "S S S S | T1 T1 T2 T2 | FT FT K K | C!\n(Virada progressiva descendo os tons)",
+                    sequence: ['S', 'S', 'S', 'S', 'T1', 'T1', 'T2', 'T2', 'FT', 'FT', 'K', 'K', 'C']
+                },
+                {
+                    name: "Virada Rock Potente",
+                    notation: "K S K S | K S S S | T1 T2 FT FT | C - C -\n(Alternância rápida com double crash)",
+                    sequence: ['K', 'S', 'K', 'S', 'K', 'S', 'S', 'S', 'T1', 'T2', 'FT', 'FT', 'C', null, 'C', null]
+                },
+                {
+                    name: "Virada Pop Rápida",
+                    notation: "- - S - | T1 T2 - - | S S FT FT | K C\n(Semicolcheias nos tons com crash acentuado)",
+                    sequence: [null, null, 'S', null, 'T1', 'T2', null, null, 'S', 'S', 'FT', 'FT', 'K', 'C']
+                },
+                {
+                    name: "Virada Funk Sincopada",
+                    notation: "S - S K | S - K S | T1 - T2 FT | K S C\n(Síncopas com pausa antes do crash)",
+                    sequence: ['S', null, 'S', 'K', 'S', null, 'K', 'S', 'T1', null, 'T2', 'FT', 'K', 'S', 'C']
+                },
+                {
+                    name: "Virada Metal Técnica",
+                    notation: "S S S S | K K K K | T1 T1 T2 T2 | FT C C C\n(Rudimentos rápidos com triple crash)",
+                    sequence: ['S', 'S', 'S', 'S', 'K', 'K', 'K', 'K', 'T1', 'T1', 'T2', 'T2', 'FT', 'C', 'C', 'C']
+                },
+                {
+                    name: "Virada Progressive",
+                    notation: "T1 K T1 K | T2 S T2 S | FT K FT K | S T1 T2 C\n(Padrão complexo alternando peças)",
+                    sequence: ['T1+K', 'T1', 'K', 'T1', 'T2+S', 'T2', 'S', 'T2', 'FT+K', 'FT', 'K', 'FT', 'S', 'T1', 'T2', 'C']
+                }
+            ],
+            ending: [
+                {
+                    name: "Final Rock Clássico",
+                    notation: "S S S S | T1 T1 T2 T2 | FT FT FT - | K - - C!\n(Descida dramática com crash final)",
+                    sequence: ['S', 'S', 'S', 'S', 'T1', 'T1', 'T2', 'T2', 'FT', 'FT', 'FT', null, 'K', null, null, 'C']
+                },
+                {
+                    name: "Final Explosivo",
+                    notation: "K S K S | C - C - | K S K S | C C C!\n(Múltiplos crashes construindo tensão)",
+                    sequence: ['K', 'S', 'K', 'S', 'C', null, 'C', null, 'K', 'S', 'K', 'S', 'C', 'C', 'C']
+                },
+                {
+                    name: "Final Progressivo",
+                    notation: "S - S - | T1 - T2 - | FT - FT - | K S C -\n(Diminuindo a intensidade gradualmente)",
+                    sequence: ['S', null, 'S', null, 'T1', null, 'T2', null, 'FT', null, 'FT', null, 'K', 'S', 'C', null]
+                },
+                {
+                    name: "Final Metal Brutal",
+                    notation: "K K K K | S S S S | C C C C | K - - -\n(Blast beat finalizando com bumbo)",
+                    sequence: ['K', 'K', 'K', 'K', 'S', 'S', 'S', 'S', 'C', 'C', 'C', 'C', 'K', null, null, null]
+                },
+                {
+                    name: "Final Jazz Refinado",
+                    notation: "R S R S | T1 T2 FT - | K - S - | R - - -\n(Finalização suave no ride)",
+                    sequence: ['R+S', 'R', 'S', 'R', 'T1', 'T2', 'FT', null, 'K', null, 'S', null, 'R', null, null, null]
+                },
+                {
+                    name: "Final Cinematográfico",
+                    notation: "C - - - | - FT - FT | - S - S | K - - C!\n(Espaçado e dramático com crash final)",
+                    sequence: ['C', null, null, null, null, 'FT', null, 'FT', null, 'S', null, 'S', 'K', null, null, 'C']
+                }
+            ]
+        };
+
+        function generateFill(type) {
+            const fills = drumFills[type];
+            const randomFill = fills[Math.floor(Math.random() * fills.length)];
+            
+            const typeNames = {
+                intro: 'INTRO/INÍCIO',
+                chorus: 'ANTES DO REFRÃO',
+                ending: 'FINAL/ENDING'
+            };
+
+            document.getElementById('fillType').textContent = typeNames[type] + ' - ' + randomFill.name;
+            document.getElementById('notation').textContent = randomFill.notation;
+            
+            currentSequence = randomFill.sequence;
+            document.getElementById('playButton').disabled = false;
+        }
+
+        function playDrumFill() {
+            if (isPlaying) return;
+            
+            initAudio();
+            isPlaying = true;
+            
+            const playButton = document.getElementById('playButton');
+            const playIcon = document.getElementById('playIcon');
+            playButton.disabled = true;
+            playIcon.textContent = '🔊';
+            
+            const beatDuration = 60 / tempo / 4; // Duração de uma semicolcheia
+            const startTime = audioContext.currentTime;
+            
+            currentSequence.forEach((note, index) => {
+                if (note) {
+                    const time = startTime + index * beatDuration;
+                    
+                    // Suporta notas simultâneas (ex: "HH+K")
+                    const notes = note.split('+');
+                    notes.forEach(n => {
+                        switch(n) {
+                            case 'K': playKick(time); break;
+                            case 'S': playSnare(time); break;
+                            case 'HH': playHiHat(time); break;
+                            case 'T1': playTom(time, 250); break;
+                            case 'T2': playTom(time, 180); break;
+                            case 'FT': playTom(time, 120); break;
+                            case 'C': playCrash(time); break;
+                            case 'R': playRide(time); break;
+                        }
+                    });
+                }
+            });
+            
+            // Resetar botão após a sequência terminar
+            const totalDuration = currentSequence.length * beatDuration + 2;
+            setTimeout(() => {
+                isPlaying = false;
+                playButton.disabled = false;
+                playIcon.textContent = '▶️';
+            }, totalDuration * 1000);
+        }
+
+        function updateTempo(value) {
+            tempo = parseInt(value);
+            document.getElementById('tempoValue').textContent = tempo;
+        }
+    </script>
+</body>
+</html>
